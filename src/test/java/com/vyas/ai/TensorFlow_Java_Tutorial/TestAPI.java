@@ -25,7 +25,9 @@ class TestAPI {
             Tensor a = TInt32.scalarOf(5);
             Tensor b = TInt32.scalarOf(6);       
             
+            
             OpScope scope = new OpScope(graph);
+            scope.withName("TestScope");
 
             // Build the computation graph: c = a * b
             graph.opBuilder("Const", "a", scope).setAttr("dtype", a.dataType()).setAttr("value", a).build();
@@ -34,7 +36,6 @@ class TestAPI {
                                        .addInput(graph.operation("b").output(0))
                                        .build();
 
-            
             // Execute the graph
             try (Session session = new Session(graph)) {
                 TInt32 result = (TInt32) session.runner().fetch("c").run().get(0);
@@ -65,6 +66,4 @@ class TestAPI {
             }
         }
     }
-
-
 }
