@@ -113,53 +113,66 @@ public class BasicNNTest {
             Ops tf = Ops.create(g);
 
             // 1. Input Layer: 3 inputs (Batch size -1 for flexibility)
-            Placeholder<TFloat32> input = tf.placeholder(TFloat32.class, 
+            Placeholder<TFloat32> input = tf.withName("Input").placeholder(TFloat32.class, 
                 Placeholder.shape(Shape.of(-1, 3)));
-            Placeholder<TFloat32> target = tf.placeholder(TFloat32.class, Placeholder.shape(Shape.of(-1, 1)));
+            Placeholder<TFloat32> target = tf.withName("Target").placeholder(TFloat32.class, Placeholder.shape(Shape.of(-1, 1)));
 
             // 2. Hidden Layer 1: 4 Neurons
-            Variable<TFloat32> w1 = tf.variable(tf.random.randomUniform(tf.constant(Shape.of(3, 4)), TFloat32.class));
+            Variable<TFloat32> w1 = tf.withName("Layer1_Weights").variable(tf.random.randomUniform(tf.constant(Shape.of(3, 4)), TFloat32.class));
             //Variable<TFloat32> b1 = tf.variable(tf.random.randomStandardNormal(tf.constant(Shape.of(4)), TFloat32.class));
-            Variable<TFloat32> b1 = tf.variable(tf.random.randomUniform(tf.constant(Shape.of(4)), TFloat32.class));
+            Variable<TFloat32> b1 = tf.withName("Layer1_Bias").variable(tf.random.randomUniform(tf.constant(Shape.of(4)), TFloat32.class));
             Operand<TFloat32> layer1 = tf.nn.relu(tf.math.add(tf.linalg.matMul(input, w1), b1));
 
             // 3. Hidden Layer 2: 4 Neurons
-            Variable<TFloat32> w2 = tf.variable(tf.random.randomUniform(tf.constant(Shape.of(4, 4)), TFloat32.class));
-            Variable<TFloat32> b2 = tf.variable(tf.random.randomUniform(tf.constant(Shape.of(4)), TFloat32.class));
+            Variable<TFloat32> w2 = tf.withName("Layer2_Weights").variable(tf.random.randomUniform(tf.constant(Shape.of(4, 4)), TFloat32.class));
+            Variable<TFloat32> b2 = tf.withName("Layer2_Bias").variable(tf.random.randomUniform(tf.constant(Shape.of(4)), TFloat32.class));
             Operand<TFloat32> layer2 = tf.nn.relu(tf.math.add(tf.linalg.matMul(layer1, w2), b2));
 
             // 4. Output Layer: 1 Neuron
-            Variable<TFloat32> wOut = tf.variable(tf.random.randomUniform(tf.constant(Shape.of(4, 1)), TFloat32.class));
-            Variable<TFloat32> bOut = tf.variable(tf.zeros(tf.constant(Shape.of(1)), TFloat32.class));
+            Variable<TFloat32> wOut = tf.withName("Output_Weight").variable(tf.random.randomUniform(tf.constant(Shape.of(4, 1)), TFloat32.class));
+            Variable<TFloat32> bOut = tf.withName("Output_Bias").variable(tf.zeros(tf.constant(Shape.of(1)), TFloat32.class));
             Operand<TFloat32> prediction = tf.math.add(tf.linalg.matMul(layer2, wOut), bOut);
             
             // 2. Initialize Variables (Crucial for execution)
             //s.run(tf.));
             
-            Operand<TFloat32> diff = tf.math.sub(prediction, target);
-            Operand<TFloat32> loss = tf.math.mean(tf.math.square(diff), tf.constant(0));
+            Operand<TFloat32> diff = tf.withName("Diffrence").math.sub(prediction, target);
+            Operand<TFloat32> loss = tf.withName("Loss").math.mean(tf.math.square(diff), tf.constant(0));
             
          // 3. Prepare Input Data: [2.0, 3.0, -1.0]
             // We create a 2D tensor with shape (1, 3)
             try(TFloat32 inputTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(new float[][]{{2.0f, 3.0f, -1.0f}}));
-            	TFloat32 targetTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(new float[][]{{1.0f}}))) {
+            	TFloat32 targetTensor = TFloat32.tensorOf(StdArrays.ndCopyOf(new float[][]{{10.0f}}))) {
                 
                 // 4. Run the Session
                 try (Result result = s.runner()
                         .feed(input.asOutput(), inputTensor)
                         .feed(target.asOutput(), targetTensor)
                         .fetch(prediction)
+                        .fetch(loss)
                         .run()) {
                     
                     TFloat32 outputTensor = (TFloat32) result.get(0);
-                    TFloat32 lossVal = (TFloat32) result.get(0);
+                    TFloat32 lossVal = (TFloat32) result.get(1);
                     System.out.println("Input: [2.0, 3.0, -1.0]");
                     System.out.println("Model Output: " + outputTensor.getFloat(0, 0));
                     System.out.println("Model Loss(MSE): " + lossVal.getFloat());
+                    
+                    result.iterator().forEachRemaining(
+                    		tensor -> 
+                    		System.out.println( "Key: " + tensor.getKey() + " - " +  tensor.getValue() )
+                    	); // Ensure all tensors are closed
                 }
             }
-
-            System.out.println("Model initialized using TensorFlow Java 1.1.0.");
+            
+			
+			  g.toGraphDef().getNodeList().forEach(node ->
+			  System.out.println(node.getName() + " - " + node.getOp() + " - " +
+			  node.getName() + " - " + node.getInputList() + " - " +
+			  node.getAttrMap().toString()));
+			  
+			  System.out.println("Model initialized using TensorFlow Java 1.1.0.");
+			 
         }
 	}
 	
