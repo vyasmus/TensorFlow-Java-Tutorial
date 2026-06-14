@@ -1,0 +1,9 @@
+*.xml linguist-detectable=true
+*.html linguist-detectable=true
+*.css linguist-detectable=true
+*.json linguist-detectable=true
+*.scss linguist-detectable=true
+*.yaml linguist-detectable=true
+*.yml linguist-detectable=true
+*.ts linguist-detectable=true
+*.js linguist-detectable=true
